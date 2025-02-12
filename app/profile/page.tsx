@@ -167,7 +167,7 @@ export default function Profile() {
           {ideas.length === 0 ? (
             <Card className="p-6">
               <p className="text-center text-muted-foreground">
-                You haven't submitted any ideas yet.
+                You haven&apos;t submitted any ideas yet.
               </p>
             </Card>
           ) : (

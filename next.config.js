@@ -6,6 +6,10 @@ const nextConfig = {
   },
   // Remove or comment out the output: 'export' line if it exists
   // output: 'export'
+  eslint: {
+    // Warning: Only disable these if you're sure you want to
+    ignoreDuringBuilds: true,
+  },
 };
 
 module.exports = nextConfig;

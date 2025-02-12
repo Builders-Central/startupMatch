@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,12 +42,9 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadIdeas();
-  }, []);
-
-  const loadIdeas = async () => {
+  const loadIdeas = useCallback(async () => {
     try {
+      setIsLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.push("/auth");
@@ -62,14 +59,19 @@ export default function Home() {
       if (error) throw error;
       if (data) {
         setIdeas(data);
+        setCurrentIndex(0);
       }
     } catch (error: any) {
-      console.error('Error loading ideas:', error);
+      console.error("Error loading ideas:", error);
       setError(error.message);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    loadIdeas();
+  }, [loadIdeas]);
 
   const currentIdea = ideas[currentIndex];
 
@@ -295,7 +297,7 @@ export default function Home() {
 
           <div className="mt-6 text-center text-xs sm:text-sm text-muted-foreground">
             <p>Swipe right or tap <ThumbsUp className="inline h-4 w-4" /> to save ideas you like</p>
-            <p>Swipe left or tap <ThumbsDown className="inline h-4 w-4" /> to pass on ideas that don't interest you</p>
+            <p>Swipe left or tap <ThumbsDown className="inline h-4 w-4" /> to pass on ideas that don&apos;t interest you</p>
           </div>
         </div>
       </main>

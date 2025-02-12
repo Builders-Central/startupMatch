@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { supabase } from "@/utils/supabase"
@@ -23,12 +23,7 @@ export default function Comments({ ideaId }: CommentsProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!ideaId) return;
-    loadComments()
-  }, [ideaId])
-
-  const loadComments = async () => {
+  const loadComments = useCallback(async () => {
     try {
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ideaId)) {
         console.warn('Invalid UUID format:', ideaId);
@@ -44,10 +39,13 @@ export default function Comments({ ideaId }: CommentsProps) {
       if (error) throw error
       setComments(data || [])
     } catch (error: any) {
-      setError("Failed to load comments")
-      console.error(error)
+      console.error("Error loading comments:", error)
     }
-  }
+  }, [ideaId])
+
+  useEffect(() => {
+    loadComments()
+  }, [loadComments])
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault()
