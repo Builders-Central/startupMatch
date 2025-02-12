@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/utils/supabase";
 import Comments from "@/components/Comments"
 import ShareIdea from "@/components/ShareIdea"
+import { useSwipeable } from "react-swipeable"
 
 interface StartupIdea {
   id: string;
@@ -97,6 +98,15 @@ export default function Home() {
     }, 500);
   };
 
+  const handlers = useSwipeable({
+    onSwipedLeft: () => handleSwipe("left"),
+    onSwipedRight: () => handleSwipe("right"),
+    preventScrollOnSwipe: true,
+    trackMouse: false,
+    delta: 50,
+    swipeDuration: 500,
+  })
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background to-secondary flex items-center justify-center">
@@ -166,60 +176,73 @@ export default function Home() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <Card className="p-4 sm:p-6 shadow-lg">
+                <Card className="p-4 sm:p-6 shadow-lg relative">
                   <div className="space-y-4 sm:space-y-6">
-                    <div>
-                      <div className="flex flex-col sm:flex-row justify-between items-start gap-2 mb-4">
+                    <div {...handlers} className="relative">
+                      <div 
+                        className={`absolute inset-0 bg-green-500/10 transition-opacity duration-200 rounded-lg ${
+                          direction === "right" ? "opacity-100" : "opacity-0"
+                        }`}
+                      />
+                      <div 
+                        className={`absolute inset-0 bg-red-500/10 transition-opacity duration-200 rounded-lg ${
+                          direction === "left" ? "opacity-100" : "opacity-0"
+                        }`}
+                      />
+
+                      <div className="relative z-20">
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-2 mb-4">
+                          <div>
+                            <h2 className="text-xl sm:text-2xl font-semibold mb-2">{currentIdea.title}</h2>
+                            <p className="text-sm sm:text-base text-muted-foreground">{currentIdea.description}</p>
+                          </div>
+                          <div className="text-left sm:text-right w-full sm:w-auto">
+                            <p className="text-xs sm:text-sm text-muted-foreground">
+                              Posted by {currentIdea.author_email}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(currentIdea.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <h3 className="text-sm font-semibold mb-1">Market Size</h3>
+                            <p className="text-sm text-muted-foreground">{currentIdea.market_size}</p>
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-semibold mb-1">Timeline</h3>
+                            <p className="text-sm text-muted-foreground">{currentIdea.timeline}</p>
+                          </div>
+                        </div>
+
                         <div>
-                          <h2 className="text-xl sm:text-2xl font-semibold mb-2">{currentIdea.title}</h2>
-                          <p className="text-sm sm:text-base text-muted-foreground">{currentIdea.description}</p>
+                          <h3 className="text-sm font-semibold mb-2">Technical Requirements</h3>
+                          <div className="flex flex-wrap gap-2">
+                            {currentIdea.technical_requirements.map((tech) => (
+                              <span
+                                key={tech}
+                                className="px-2 py-1 bg-secondary rounded-full text-xs"
+                              >
+                                {tech}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                        <div className="text-left sm:text-right w-full sm:w-auto">
-                          <p className="text-xs sm:text-sm text-muted-foreground">
-                            Posted by {currentIdea.author_email}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(currentIdea.created_at).toLocaleDateString()}
-                          </p>
+
+                        <div>
+                          <h3 className="text-sm font-semibold mb-2">Key Challenges</h3>
+                          <ul className="list-disc pl-4 text-sm text-muted-foreground">
+                            {currentIdea.challenges.map((challenge) => (
+                              <li key={challenge}>{challenge}</li>
+                            ))}
+                          </ul>
                         </div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <h3 className="text-sm font-semibold mb-1">Market Size</h3>
-                        <p className="text-sm text-muted-foreground">{currentIdea.market_size}</p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-semibold mb-1">Timeline</h3>
-                        <p className="text-sm text-muted-foreground">{currentIdea.timeline}</p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="text-sm font-semibold mb-2">Technical Requirements</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {currentIdea.technical_requirements.map((tech) => (
-                          <span
-                            key={tech}
-                            className="px-2 py-1 bg-secondary rounded-full text-xs"
-                          >
-                            {tech}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="text-sm font-semibold mb-2">Key Challenges</h3>
-                      <ul className="list-disc pl-4 text-sm text-muted-foreground">
-                        {currentIdea.challenges.map((challenge) => (
-                          <li key={challenge}>{challenge}</li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="flex justify-between items-center pt-4">
+                    <div className="flex justify-between items-center pt-4 relative z-30">
                       <Button
                         variant="outline"
                         size="lg"
@@ -259,7 +282,7 @@ export default function Home() {
                     </div>
 
                     {showComments && (
-                      <div className="mt-4 border-t pt-4">
+                      <div className="mt-4 border-t pt-4 relative z-30">
                         <h3 className="text-sm font-semibold mb-2">Comments</h3>
                         <Comments ideaId={currentIdea.id} />
                       </div>
@@ -271,8 +294,8 @@ export default function Home() {
           </AnimatePresence>
 
           <div className="mt-6 text-center text-xs sm:text-sm text-muted-foreground">
-            <p>Swipe right to save ideas you like</p>
-            <p>Swipe left to pass on ideas that don't interest you</p>
+            <p>Swipe right or tap <ThumbsUp className="inline h-4 w-4" /> to save ideas you like</p>
+            <p>Swipe left or tap <ThumbsDown className="inline h-4 w-4" /> to pass on ideas that don't interest you</p>
           </div>
         </div>
       </main>

@@ -80,3 +80,45 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .touch-pan-y {
+    touch-action: pan-y;
+  }
+}
+
+/* Optional: Add smooth transitions for the swipe indicators */
+.bg-green-500\/10 {
+  transition: opacity 200ms ease-in-out;
+}
+
+.bg-red-500\/10 {
+  transition: opacity 200ms ease-in-out;
+}
+
+/* Add to your existing globals.css */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.will-change-transform {
+  will-change: transform;
+}
+
+/* Optimize animations for reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
