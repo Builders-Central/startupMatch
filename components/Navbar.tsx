@@ -5,29 +5,63 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
 import { Menu, X } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function Navbar() {
   const router = useRouter();
   const { data: session } = useSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
 
-  const navigation = [
-    { name: "Home", href: "/" },
-    { name: "Browse Ideas", href: "/app" },
-    ...(session
-      ? [
-          { name: "Submit Idea", href: "/submit" },
-          { name: "Profile", href: "/profile" },
-        ]
-      : []),
-  ];
+  const navItems = session ? (
+    <>
+      <Button
+        variant="ghost"
+        onClick={() => {
+          router.push("/explore");
+          setIsMenuOpen(false);
+        }}
+      >
+        Explore
+      </Button>
+      <Button
+        variant="ghost"
+        onClick={() => {
+          router.push("/submit");
+          setIsMenuOpen(false);
+        }}
+      >
+        Submit Idea
+      </Button>
+      <Button
+        variant="ghost"
+        onClick={() => {
+          router.push("/profile");
+          setIsMenuOpen(false);
+        }}
+      >
+        Profile
+      </Button>
+    </>
+  ) : (
+    <Button
+      onClick={() => {
+        router.push("/auth");
+        setIsMenuOpen(false);
+      }}
+    >
+      Sign In
+    </Button>
+  );
 
   return (
-    <nav className="bg-background/80 backdrop-blur-md sticky top-0 z-50 border-b">
+    <nav className="border-b bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
           <div className="flex items-center">
             <Button
               variant="ghost"
@@ -39,24 +73,20 @@ export default function Navbar() {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden sm:flex sm:items-center sm:space-x-4">
-            {navigation.map((item) => (
-              <Button
-                key={item.name}
-                variant="ghost"
-                onClick={() => router.push(item.href)}
-              >
-                {item.name}
-              </Button>
-            ))}
-            {!session && (
-              <Button onClick={() => router.push("/auth")}>Sign In</Button>
-            )}
+          <div className="hidden md:flex items-center gap-4">
+            <ThemeToggle />
+            {navItems}
           </div>
 
-          {/* Mobile menu button */}
-          <div className="flex items-center sm:hidden">
-            <Button variant="ghost" size="icon" onClick={toggleMenu}>
+          {/* Mobile Menu Button */}
+          <div className="flex items-center md:hidden">
+            <ThemeToggle />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="ml-2"
+              onClick={toggleMenu}
+            >
               {isMenuOpen ? (
                 <X className="h-6 w-6" />
               ) : (
@@ -65,39 +95,14 @@ export default function Navbar() {
             </Button>
           </div>
         </div>
-      </div>
 
-      {/* Mobile Navigation */}
-      {isMenuOpen && (
-        <div className="sm:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1">
-            {navigation.map((item) => (
-              <Button
-                key={item.name}
-                variant="ghost"
-                className="w-full justify-start"
-                onClick={() => {
-                  router.push(item.href);
-                  setIsMenuOpen(false);
-                }}
-              >
-                {item.name}
-              </Button>
-            ))}
-            {!session && (
-              <Button
-                className="w-full"
-                onClick={() => {
-                  router.push("/auth");
-                  setIsMenuOpen(false);
-                }}
-              >
-                Sign In
-              </Button>
-            )}
+        {/* Mobile Navigation */}
+        {isMenuOpen && (
+          <div className="md:hidden border-t py-4">
+            <div className="flex flex-col space-y-2">{navItems}</div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </nav>
   );
 }

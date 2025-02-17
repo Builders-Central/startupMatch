@@ -112,7 +112,7 @@ export default function SubmitIdea() {
         throw new Error(data.error || "Failed to submit idea");
       }
 
-      router.push("/app");
+      router.push("/explore");
     } catch (error: any) {
       console.error("Submit error:", error);
       setError(error.message);

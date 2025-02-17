@@ -12,7 +12,7 @@ export default function Auth() {
 
   useEffect(() => {
     if (session) {
-      router.push("/app");
+      router.push("/");
     }
   }, [session, router]);
 
