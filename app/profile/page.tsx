@@ -1,66 +1,70 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Pencil, Trash2, LogOut, MessageCircle } from "lucide-react"
-import { supabase } from "@/utils/supabase"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Pencil, Trash2, LogOut, MessageCircle } from "lucide-react";
+import { supabase } from "@/utils/supabase";
+import { useSession, signOut } from "next-auth/react";
 
 interface Comment {
-  id: string
-  content: string
-  user_email: string
-  created_at: string
+  id: string;
+  content: string;
+  user_email: string;
+  created_at: string;
 }
 
 interface StartupIdea {
-  id: string
-  title: string
-  description: string
-  market_size: string
-  market_potential: string
-  technical_requirements: string[]
-  financial_requirement: string
-  timeline: string
-  category: string
-  challenges: string[]
-  created_at: string
+  id: string;
+  title: string;
+  description: string;
+  market_size: string;
+  market_potential: string;
+  technical_requirements: string[];
+  financial_requirement: string;
+  timeline: string;
+  category: string;
+  challenges: string[];
+  created_at: string;
   metrics: {
-    likes: number
-    passes: number
-    shares: number
-  }
-  comments?: Comment[]
+    likes: number;
+    passes: number;
+    shares: number;
+  };
+  comments?: Comment[];
 }
 
 export default function Profile() {
-  const router = useRouter()
-  const [ideas, setIdeas] = useState<StartupIdea[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [userEmail, setUserEmail] = useState<string | null>(null)
-  const [expandedComments, setExpandedComments] = useState<{ [key: string]: boolean }>({})
+  const router = useRouter();
+  const [ideas, setIdeas] = useState<StartupIdea[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [expandedComments, setExpandedComments] = useState<{
+    [key: string]: boolean;
+  }>({});
+
+  const { data: session } = useSession();
 
   useEffect(() => {
     const checkAuthAndLoadData = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-          router.push("/auth")
-          return
+        if (!session) {
+          router.push("/auth");
+          return;
         }
 
-        setUserEmail(user.email || null)
+        setUserEmail(session.user?.email || null);
 
         // Fetch user's submitted ideas with comments
         const { data: ideasData, error: ideasError } = await supabase
           .from("startup_ideas")
           .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
+          .eq("author_email", session.user?.email)
+          .order("created_at", { ascending: false });
 
-        if (ideasError) throw ideasError
+        if (ideasError) throw ideasError;
 
         // Fetch comments for each idea
         const ideasWithComments = await Promise.all(
@@ -69,67 +73,69 @@ export default function Profile() {
               .from("comments")
               .select("*")
               .eq("idea_id", idea.id)
-              .order("created_at", { ascending: false })
+              .order("created_at", { ascending: false });
 
-            if (commentsError) throw commentsError
+            if (commentsError) throw commentsError;
 
             return {
               ...idea,
-              comments: comments || []
-            }
+              comments: comments || [],
+            };
           })
-        )
+        );
 
-        setIdeas(ideasWithComments)
+        setIdeas(ideasWithComments);
       } catch (error: any) {
-        setError(error.message)
+        setError(error.message);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    checkAuthAndLoadData()
-  }, [router])
+    checkAuthAndLoadData();
+  }, [router, session]);
 
   const handleDelete = async (ideaId: string) => {
-    if (!confirm("Are you sure you want to delete this idea?")) return
+    if (!confirm("Are you sure you want to delete this idea?")) return;
 
     try {
-      const { error } = await supabase
-        .from("startup_ideas")
-        .delete()
-        .eq("id", ideaId)
+      const response = await fetch(`/api/ideas/${ideaId}`, {
+        method: "DELETE",
+      });
 
-      if (error) throw error
-      setIdeas(ideas.filter(idea => idea.id !== ideaId))
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to delete idea");
+      }
+
+      setIdeas(ideas.filter((idea) => idea.id !== ideaId));
     } catch (error: any) {
-      setError(error.message)
+      setError(error.message);
     }
-  }
+  };
 
   const handleSignOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
-      router.push("/auth")
+      await signOut();
+      router.push("/auth");
     } catch (error: any) {
-      setError(error.message)
+      setError(error.message);
     }
-  }
+  };
 
   const toggleComments = (ideaId: string) => {
-    setExpandedComments(prev => ({
+    setExpandedComments((prev) => ({
       ...prev,
-      [ideaId]: !prev[ideaId]
-    }))
-  }
+      [ideaId]: !prev[ideaId],
+    }));
+  };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background to-secondary p-4 flex items-center justify-center">
         <p>Loading...</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -160,9 +166,7 @@ export default function Profile() {
             </Button>
           </div>
 
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
           {ideas.length === 0 ? (
             <Card className="p-6">
@@ -177,13 +181,15 @@ export default function Profile() {
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="text-lg font-semibold">{idea.title}</h3>
-                      <p className="text-muted-foreground">{idea.description}</p>
+                      <p className="text-muted-foreground">
+                        {idea.description}
+                      </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center justify-center p">
                       <Button
-                        variant="outline"
-                        size="icon"
                         onClick={() => router.push(`/edit/${idea.id}`)}
+                        variant="outline"
+                        size="sm"
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -219,13 +225,16 @@ export default function Profile() {
                     <div>
                       <p className="text-sm font-medium">Engagement</p>
                       <p className="text-sm text-muted-foreground">
-                        {idea.metrics.likes} likes • {idea.metrics.shares} shares • {idea.comments?.length || 0} comments
+                        {idea.metrics.likes} likes • {idea.metrics.shares}{" "}
+                        shares • {idea.comments?.length || 0} comments
                       </p>
                     </div>
                   </div>
 
                   <div>
-                    <p className="text-sm font-medium mb-1">Technical Requirements</p>
+                    <p className="text-sm font-medium mb-1">
+                      Technical Requirements
+                    </p>
                     <div className="flex flex-wrap gap-2">
                       {idea.technical_requirements.map((tech) => (
                         <span
@@ -246,24 +255,39 @@ export default function Profile() {
                       className="flex items-center gap-2"
                     >
                       <MessageCircle className="h-4 w-4" />
-                      {expandedComments[idea.id] ? 'Hide Comments' : 'Show Comments'}
-                      <span className="text-muted-foreground">({idea.comments?.length || 0})</span>
+                      {expandedComments[idea.id]
+                        ? "Hide Comments"
+                        : "Show Comments"}
+                      <span className="text-muted-foreground">
+                        ({idea.comments?.length || 0})
+                      </span>
                     </Button>
 
                     {expandedComments[idea.id] && idea.comments && (
                       <div className="mt-4 space-y-4">
                         {idea.comments.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">No comments yet</p>
+                          <p className="text-sm text-muted-foreground">
+                            No comments yet
+                          </p>
                         ) : (
                           idea.comments.map((comment) => (
-                            <div key={comment.id} className="border-b pb-3 last:border-0">
+                            <div
+                              key={comment.id}
+                              className="border-b pb-3 last:border-0"
+                            >
                               <div className="flex justify-between items-start mb-1">
-                                <span className="text-sm font-medium">{comment.user_email}</span>
+                                <span className="text-sm font-medium">
+                                  {comment.user_email}
+                                </span>
                                 <span className="text-xs text-muted-foreground">
-                                  {new Date(comment.created_at).toLocaleDateString()}
+                                  {new Date(
+                                    comment.created_at
+                                  ).toLocaleDateString()}
                                 </span>
                               </div>
-                              <p className="text-sm text-muted-foreground">{comment.content}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {comment.content}
+                              </p>
                             </div>
                           ))
                         )}
@@ -277,5 +301,5 @@ export default function Profile() {
         </div>
       </div>
     </div>
-  )
-} 
+  );
+}

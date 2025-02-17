@@ -1,121 +1,105 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { supabase } from "@/utils/supabase"
-import { formatDistanceToNow } from "date-fns"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { useSession } from "next-auth/react";
+import { supabase } from "@/utils/supabase";
 
 interface Comment {
-  id: string
-  content: string
-  user_email: string
-  created_at: string
+  id: string;
+  content: string;
+  user_email: string;
+  created_at: string;
 }
 
-interface CommentsProps {
-  ideaId: string
-}
+export default function Comments({ ideaId }: { ideaId: string }) {
+  const [comment, setComment] = useState("");
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { data: session } = useSession();
 
-export default function Comments({ ideaId }: CommentsProps) {
-  const [comments, setComments] = useState<Comment[]>([])
-  const [newComment, setNewComment] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  // Fetch comments when component mounts or ideaId changes
+  useEffect(() => {
+    fetchComments();
+  }, [ideaId]);
 
-  const loadComments = useCallback(async () => {
+  const fetchComments = async () => {
     try {
-      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ideaId)) {
-        console.warn('Invalid UUID format:', ideaId);
-        return;
-      }
-
       const { data, error } = await supabase
         .from("comments")
         .select("*")
         .eq("idea_id", ideaId)
-        .order("created_at", { ascending: false })
+        .order("created_at", { ascending: false });
 
-      if (error) throw error
-      setComments(data || [])
+      if (error) throw error;
+      setComments(data || []);
     } catch (error: any) {
-      console.error("Error loading comments:", error)
+      console.error("Error fetching comments:", error);
+      setError(error.message);
     }
-  }, [ideaId])
+  };
 
-  useEffect(() => {
-    loadComments()
-  }, [loadComments])
-
-  const handleSubmitComment = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError(null)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
 
     try {
-      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ideaId)) {
-        throw new Error('Invalid idea ID format');
-      }
+      const response = await fetch("/api/comments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ideaId,
+          content: comment,
+        }),
+      });
 
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error("Not authenticated")
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
 
-      const { error } = await supabase.from("comments").insert({
-        idea_id: ideaId,
-        user_id: user.id,
-        user_email: user.email,
-        content: newComment
-      })
-
-      if (error) throw error
-      setNewComment("")
-      loadComments()
+      // Add new comment to the list
+      setComments([data, ...comments]);
+      setComment("");
     } catch (error: any) {
-      setError(error.message)
+      setError(error.message);
     } finally {
-      setIsLoading(false)
+      setIsSubmitting(false);
     }
-  }
-
-  if (!ideaId) {
-    return null;
-  }
+  };
 
   return (
     <div className="space-y-4">
-      <form onSubmit={handleSubmitComment} className="space-y-2">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <Textarea
-          value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
           placeholder="Add a comment..."
           required
         />
-        <Button
-          type="submit"
-          disabled={isLoading}
-          className="w-full"
-        >
-          {isLoading ? "Posting..." : "Post Comment"}
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Posting..." : "Post Comment"}
         </Button>
       </form>
 
-      {error && (
-        <p className="text-sm text-destructive">{error}</p>
-      )}
-
+      {/* Display comments */}
       <div className="space-y-4">
         {comments.map((comment) => (
-          <div key={comment.id} className="border-b pb-4">
-            <div className="flex justify-between items-start mb-2">
-              <span className="font-medium">{comment.user_email}</span>
+          <div key={comment.id} className="border-b pb-3 last:border-0">
+            <div className="flex justify-between items-start mb-1">
+              <span className="text-sm font-medium">{comment.user_email}</span>
               <span className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                {new Date(comment.created_at).toLocaleDateString()}
               </span>
             </div>
-            <p className="text-sm">{comment.content}</p>
+            <p className="text-sm text-muted-foreground">{comment.content}</p>
           </div>
         ))}
       </div>
     </div>
-  )
-} 
+  );
+}
