@@ -8,7 +8,7 @@ export default async function Home() {
   const session = await getServerSession(authOptions);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col items-center">
       {/* Hero Section */}
       <section className="py-12 md:py-20">
         <div className="container px-4 md:px-6">
@@ -36,10 +36,10 @@ export default async function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="py-12 bg-muted/50">
+      <section className="py-12">
         <div className="container px-4 md:px-6">
           <div className="grid gap-8 md:grid-cols-3">
-            <div className="flex flex-col items-center space-y-4 text-center">
+            <div className="flex flex-col items-center space-y-4 text-center bg-muted/50 p-4 rounded-lg">
               <div className="bg-primary/10 p-3 rounded-full">
                 <Lightbulb className="h-6 w-6 text-primary" />
               </div>
@@ -50,7 +50,7 @@ export default async function Home() {
                   : "Access a pool of validated startup ideas and opportunities."}
               </p>
             </div>
-            <div className="flex flex-col items-center space-y-4 text-center">
+            <div className="flex flex-col items-center space-y-4 text-center bg-muted/50 p-4 rounded-lg">
               <div className="bg-primary/10 p-3 rounded-full">
                 <Users className="h-6 w-6 text-primary" />
               </div>
@@ -61,7 +61,7 @@ export default async function Home() {
                   : "Join a network of entrepreneurs, developers, and innovators."}
               </p>
             </div>
-            <div className="flex flex-col items-center space-y-4 text-center">
+            <div className="flex flex-col items-center space-y-4 text-center bg-muted/50 p-4 rounded-lg">
               <div className="bg-primary/10 p-3 rounded-full">
                 <Target className="h-6 w-6 text-primary" />
               </div>

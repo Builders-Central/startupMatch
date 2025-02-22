@@ -9,21 +9,33 @@ import { Textarea } from "@/components/ui/textarea";
 import { useSession } from "next-auth/react";
 import { X } from "lucide-react";
 
+interface IdeaFormData {
+  title: string; // Required
+  description: string; // Required
+  marketSize: string[]; // Required
+  marketPotential: string[]; // Required
+  technicalRequirements: string[]; // Required but can be empty
+  financialRequirement: string[]; // Required
+  timeline: string[]; // Required
+  category: string[]; // Required
+  challenges: string[]; // Required but can be empty
+}
+
 export default function SubmitIdea() {
   const router = useRouter();
   const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<IdeaFormData>({
     title: "",
     description: "",
-    marketSize: "",
-    marketPotential: "",
+    marketSize: [""],
+    marketPotential: [""],
     technicalRequirements: [""],
-    financialRequirement: "",
-    timeline: "",
-    category: "",
+    financialRequirement: [""],
+    timeline: [""],
+    category: [""],
     challenges: [""],
   });
 
@@ -81,15 +93,20 @@ export default function SubmitIdea() {
         throw new Error("Not authenticated");
       }
 
+      // Validate required fields
+      if (!formData.title.trim() || !formData.description.trim()) {
+        throw new Error("Title and description are required");
+      }
+
       const newIdea = {
-        title: formData.title,
-        description: formData.description,
-        market_size: formData.marketSize,
-        market_potential: formData.marketPotential,
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        market_size: formData.marketSize[0]?.trim() || null,
+        market_potential: formData.marketPotential[0]?.trim() || null,
         technical_requirements: formData.technicalRequirements.filter(Boolean),
-        financial_requirement: formData.financialRequirement,
-        timeline: formData.timeline,
-        category: formData.category,
+        financial_requirement: formData.financialRequirement[0]?.trim() || null,
+        timeline: formData.timeline[0]?.trim() || null,
+        category: formData.category[0]?.trim() || null,
         challenges: formData.challenges.filter(Boolean),
         metrics: {
           likes: 0,
@@ -168,9 +185,8 @@ export default function SubmitIdea() {
               <Input
                 value={formData.marketSize}
                 onChange={(e) =>
-                  setFormData({ ...formData, marketSize: e.target.value })
+                  setFormData({ ...formData, marketSize: [e.target.value] })
                 }
-                required
                 placeholder="e.g., $50B+"
               />
             </div>
@@ -181,9 +197,11 @@ export default function SubmitIdea() {
               <Input
                 value={formData.marketPotential}
                 onChange={(e) =>
-                  setFormData({ ...formData, marketPotential: e.target.value })
+                  setFormData({
+                    ...formData,
+                    marketPotential: [e.target.value],
+                  })
                 }
-                required
                 placeholder="e.g., High growth potential"
               />
             </div>
@@ -232,10 +250,9 @@ export default function SubmitIdea() {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    financialRequirement: e.target.value,
+                    financialRequirement: [e.target.value],
                   })
                 }
-                required
                 placeholder="e.g., $500K initial investment"
               />
             </div>
@@ -244,9 +261,8 @@ export default function SubmitIdea() {
               <Input
                 value={formData.timeline}
                 onChange={(e) =>
-                  setFormData({ ...formData, timeline: e.target.value })
+                  setFormData({ ...formData, timeline: [e.target.value] })
                 }
-                required
                 placeholder="e.g., 12 months to MVP"
               />
             </div>
@@ -257,9 +273,8 @@ export default function SubmitIdea() {
             <Input
               value={formData.category}
               onChange={(e) =>
-                setFormData({ ...formData, category: e.target.value })
+                setFormData({ ...formData, category: [e.target.value] })
               }
-              required
               placeholder="e.g., E-commerce"
             />
           </div>
