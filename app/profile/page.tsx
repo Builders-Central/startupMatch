@@ -37,6 +37,7 @@ interface StartupIdea {
 
 export default function Profile() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [ideas, setIdeas] = useState<StartupIdea[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,55 +46,50 @@ export default function Profile() {
     [key: string]: boolean;
   }>({});
 
-  const { data: session } = useSession();
-
   useEffect(() => {
     const checkAuthAndLoadData = async () => {
-      try {
-        if (!session) {
-          router.push("/auth");
-          return;
-        }
+      if (status === "loading") return;
 
-        setUserEmail(session.user?.email || null);
-
-        // Fetch user's submitted ideas with comments
-        const { data: ideasData, error: ideasError } = await supabase
-          .from("startup_ideas")
-          .select("*")
-          .eq("author_email", session.user?.email)
-          .order("created_at", { ascending: false });
-
-        if (ideasError) throw ideasError;
-
-        // Fetch comments for each idea
-        const ideasWithComments = await Promise.all(
-          (ideasData || []).map(async (idea) => {
-            const { data: comments, error: commentsError } = await supabase
-              .from("comments")
-              .select("*")
-              .eq("idea_id", idea.id)
-              .order("created_at", { ascending: false });
-
-            if (commentsError) throw commentsError;
-
-            return {
-              ...idea,
-              comments: comments || [],
-            };
-          })
-        );
-
-        setIdeas(ideasWithComments);
-      } catch (error: any) {
-        setError(error.message);
-      } finally {
-        setIsLoading(false);
+      if (!session) {
+        router.push("/auth");
+        return;
       }
+
+      setUserEmail(session.user?.email || null);
+
+      // Fetch user's submitted ideas with comments
+      const { data: ideasData, error: ideasError } = await supabase
+        .from("startup_ideas")
+        .select("*")
+        .eq("author_email", session.user?.email)
+        .order("created_at", { ascending: false });
+
+      if (ideasError) throw ideasError;
+
+      // Fetch comments for each idea
+      const ideasWithComments = await Promise.all(
+        (ideasData || []).map(async (idea) => {
+          const { data: comments, error: commentsError } = await supabase
+            .from("comments")
+            .select("*")
+            .eq("idea_id", idea.id)
+            .order("created_at", { ascending: false });
+
+          if (commentsError) throw commentsError;
+
+          return {
+            ...idea,
+            comments: comments || [],
+          };
+        })
+      );
+
+      setIdeas(ideasWithComments);
+      setIsLoading(false);
     };
 
     checkAuthAndLoadData();
-  }, [router, session]);
+  }, [router, session, status]);
 
   const handleDelete = async (ideaId: string) => {
     if (!confirm("Are you sure you want to delete this idea?")) return;

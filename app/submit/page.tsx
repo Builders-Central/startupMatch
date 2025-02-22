@@ -23,7 +23,7 @@ interface IdeaFormData {
 
 export default function SubmitIdea() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -139,10 +139,12 @@ export default function SubmitIdea() {
   };
 
   useEffect(() => {
+    if (status === "loading") return;
+
     if (!session) {
       router.push("/auth");
     }
-  }, [session, router]);
+  }, [session, router, status]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary p-4">

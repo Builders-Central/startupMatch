@@ -92,9 +92,32 @@ export default function Home() {
   const handleSwipe = async (direction: "left" | "right") => {
     setDirection(direction);
 
-    if (direction === "right") {
-      setShowHeart(true);
-      setTimeout(() => setShowHeart(false), 1000);
+    if (direction === "right" && currentIdea && session?.user?.email) {
+      try {
+        // Check if the user has already liked the idea
+        const { data: existingLike } = await supabase
+          .from("likes")
+          .select("*")
+          .eq("idea_id", currentIdea.id)
+          .eq("user_email", session.user?.email)
+          .single();
+
+        if (!existingLike) {
+          // User has not liked the idea, proceed to like it
+          await supabase.rpc("increment_likes", { idea_id: currentIdea.id });
+          await supabase
+            .from("likes")
+            .insert([
+              { idea_id: currentIdea.id, user_email: session.user?.email },
+            ]);
+          setShowHeart(true);
+          setTimeout(() => setShowHeart(false), 1000);
+        } else {
+          console.log("User has already liked this idea.");
+        }
+      } catch (error) {
+        console.error("Failed to update likes:", error);
+      }
     }
 
     if (direction === "left" && currentIdea) {

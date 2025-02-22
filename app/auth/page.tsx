@@ -12,7 +12,7 @@ export default function Auth() {
 
   useEffect(() => {
     if (session) {
-      router.push("/");
+      router.push("/explore");
     }
   }, [session, router]);
 
