@@ -10,6 +10,7 @@ import {
   Share2,
   MessageCircle,
   Plus,
+  RefreshCw,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/utils/supabase";
@@ -50,34 +51,58 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showHeart, setShowHeart] = useState(false);
+  const [showMessage, setShowMessage] = useState(false);
 
   const { data: session } = useSession();
 
   const loadIdeas = useCallback(async () => {
     try {
       setIsLoading(true);
-      if (!session) {
+      if (!session?.user?.email) {
         router.push("/auth");
         return;
       }
 
-      const { data, error } = await supabase
-        .from("startup_ideas")
-        .select("*")
-        .order("created_at", { ascending: false });
+      // First, get all viewed idea IDs for the user
+      const { data: viewedIdeasData, error: viewedIdeasError } = await supabase
+        .from("viewed_ideas")
+        .select("idea_id")
+        .eq("user_email", session.user.email);
 
-      if (error) {
-        setError(error.message);
+      if (viewedIdeasError) {
+        console.error(viewedIdeasError.message);
+        setIsLoading(false);
         return;
       }
 
-      if (data) {
-        setIdeas(data);
+      const viewedIdeaIds = viewedIdeasData?.map((idea) => idea.idea_id) || [];
+
+      // Get all ideas except those created by the current user
+      const { data: allIdeas, error: allIdeasError } = await supabase
+        .from("startup_ideas")
+        .select("*")
+        .neq("author_email", session.user.email) // Filter out user's own ideas
+        .order("created_at", { ascending: false });
+
+      if (allIdeasError) {
+        console.error(allIdeasError.message);
+        setIsLoading(false);
+        return;
+      }
+
+      // Filter out ideas that the user has already viewed
+      const unseenIdeas = allIdeas.filter(
+        (idea) => !viewedIdeaIds.includes(idea.id)
+      );
+
+      if (unseenIdeas.length === 0) {
+        setIdeas([]);
+      } else {
+        setIdeas(unseenIdeas);
         setCurrentIndex(0);
       }
     } catch (error: any) {
       console.error("Error loading ideas:", error);
-      setError(error.message);
     } finally {
       setIsLoading(false);
     }
@@ -92,46 +117,58 @@ export default function Home() {
   const handleSwipe = async (direction: "left" | "right") => {
     setDirection(direction);
 
-    if (direction === "right" && currentIdea && session?.user?.email) {
+    if (currentIdea && session?.user?.email) {
       try {
-        // Check if the user has already liked the idea
-        const { data: existingLike } = await supabase
-          .from("likes")
-          .select("*")
-          .eq("idea_id", currentIdea.id)
-          .eq("user_email", session.user?.email)
-          .single();
-
-        if (!existingLike) {
-          // User has not liked the idea, proceed to like it
-          await supabase.rpc("increment_likes", { idea_id: currentIdea.id });
-          await supabase
-            .from("likes")
-            .insert([
-              { idea_id: currentIdea.id, user_email: session.user?.email },
-            ]);
+        // Show heart animation immediately for right swipes (likes)
+        if (direction === "right") {
           setShowHeart(true);
           setTimeout(() => setShowHeart(false), 1000);
-        } else {
-          console.log("User has already liked this idea.");
         }
+
+        // Record that the user has viewed this idea
+        await supabase.from("viewed_ideas").insert([
+          {
+            idea_id: currentIdea.id,
+            user_email: session.user.email,
+            action: direction, // optionally store whether they liked or passed
+          },
+        ]);
+
+        if (direction === "right") {
+          // Check if the user has already liked the idea
+          const { data: existingLike } = await supabase
+            .from("likes")
+            .select("*")
+            .eq("idea_id", currentIdea.id)
+            .eq("user_email", session.user.email)
+            .single();
+
+          if (!existingLike) {
+            await supabase.rpc("increment_likes", { idea_id: currentIdea.id });
+            await supabase
+              .from("likes")
+              .insert([
+                { idea_id: currentIdea.id, user_email: session.user.email },
+              ]);
+          }
+        } else if (direction === "left") {
+          await supabase.rpc("increment_passes", { idea_id: currentIdea.id });
+        }
+
+        // If this was the last idea, show the message box
+        if (currentIndex === ideas.length - 1) {
+          setShowMessage(true);
+          return;
+        }
+
+        setTimeout(() => {
+          setCurrentIndex((prev) => (prev + 1) % ideas.length);
+          setDirection(null);
+        }, 500);
       } catch (error) {
-        console.error("Failed to update likes:", error);
+        console.error("Failed to record action:", error);
       }
     }
-
-    if (direction === "left" && currentIdea) {
-      try {
-        await supabase.rpc("increment_passes", { idea_id: currentIdea.id });
-      } catch (error) {
-        console.error("Failed to update passes:", error);
-      }
-    }
-
-    setTimeout(() => {
-      setCurrentIndex((prev) => (prev + 1) % ideas.length);
-      setDirection(null);
-    }, 500);
   };
 
   const handlers = useSwipeable({
@@ -161,10 +198,38 @@ export default function Home() {
 
   if (ideas.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-secondary flex items-center justify-center">
-        <div className="text-center">
-          <p className="mb-4">No ideas available</p>
-          <Button onClick={() => router.push("/submit")}>Submit an Idea</Button>
+      <div className="min-h-screen bg-gradient-to-b from-background to-secondary flex items-center justify-center p-4">
+        <div className="bg-card border rounded-xl shadow-lg p-8 max-w-md w-full text-center">
+          <div className="mb-6 flex justify-center">
+            <div className="h-20 w-20 rounded-full bg-secondary/50 flex items-center justify-center">
+              <RefreshCw className="h-10 w-10 text-primary" />
+            </div>
+          </div>
+
+          <h2 className="text-2xl font-bold mb-3">All caught up!</h2>
+
+          <p className="text-muted-foreground mb-6">
+            You've seen all available ideas. Check back later for new
+            submissions or create your own!
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button
+              onClick={() => router.push("/submit")}
+              className="w-full sm:w-auto"
+              size="lg"
+            >
+              Submit an Idea
+            </Button>
+            <Button
+              onClick={() => loadIdeas()}
+              variant="outline"
+              className="w-full sm:w-auto"
+              size="lg"
+            >
+              Refresh
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -172,6 +237,32 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-background to-secondary">
+      {/* Message Box */}
+      {showMessage && (
+        <div className="fixed top-0 left-0 right-0 z-50 p-4 animate-in fade-in slide-in-from-top duration-300">
+          <div className="max-w-md mx-auto bg-card border rounded-lg shadow-lg p-4 flex flex-col items-center transition-all">
+            <div className="mb-2 flex justify-center">
+              <div className="h-10 w-10 rounded-full bg-secondary/50 flex items-center justify-center">
+                <RefreshCw className="h-5 w-5 text-primary animate-spin-slow" />
+              </div>
+            </div>
+            <h3 className="text-lg font-semibold mb-1">All caught up!</h3>
+            <p className="text-muted-foreground text-center mb-3">
+              You've seen all available ideas. Check back later for new
+              submissions.
+            </p>
+            <Button
+              onClick={() => setShowMessage(false)}
+              variant="outline"
+              size="sm"
+              className="px-6 transition-all duration-200 hover:scale-105"
+            >
+              Close
+            </Button>
+          </div>
+        </div>
+      )}
+
       <HeartAnimation isVisible={showHeart} />
 
       <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-secondary">

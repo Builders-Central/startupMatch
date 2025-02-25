@@ -67,19 +67,42 @@ export default function EditIdea({ params }: { params: { id: string } }) {
     setError(null);
 
     try {
+      // Validate only title and description as required
+      if (!formData.title.trim() || !formData.description.trim()) {
+        setError("Title and description are required");
+        setIsLoading(false);
+        return;
+      }
+
+      // Make sure we're using the correct API endpoint path
       const response = await fetch(`/api/ideas/${params.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description,
+          market_size: formData.market_size,
+          market_potential: formData.market_potential,
+          technical_requirements: formData.technical_requirements,
+          financial_requirement: formData.financial_requirement,
+          timeline: formData.timeline,
+          category: formData.category,
+          challenges: formData.challenges,
+        }),
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({
+          error: `Server error: ${response.status}`,
+        }));
+        throw new Error(errorData.error || "Failed to update idea");
+      }
 
       router.push("/profile");
     } catch (error: any) {
+      console.error("Update error:", error);
       setError(error.message);
     } finally {
       setIsLoading(false);
@@ -129,7 +152,6 @@ export default function EditIdea({ params }: { params: { id: string } }) {
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, title: e.target.value }))
             }
-            required
           />
         </div>
 
@@ -140,7 +162,6 @@ export default function EditIdea({ params }: { params: { id: string } }) {
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, description: e.target.value }))
             }
-            required
           />
         </div>
 
@@ -151,7 +172,6 @@ export default function EditIdea({ params }: { params: { id: string } }) {
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, market_size: e.target.value }))
             }
-            required
           />
         </div>
 
@@ -165,7 +185,6 @@ export default function EditIdea({ params }: { params: { id: string } }) {
                 market_potential: e.target.value,
               }))
             }
-            required
           />
         </div>
 
@@ -182,7 +201,6 @@ export default function EditIdea({ params }: { params: { id: string } }) {
                     "technical_requirements"
                   )
                 }
-                required
               />
               <Button
                 type="button"
@@ -213,7 +231,6 @@ export default function EditIdea({ params }: { params: { id: string } }) {
                 financial_requirement: e.target.value,
               }))
             }
-            required
           />
         </div>
 
@@ -224,7 +241,6 @@ export default function EditIdea({ params }: { params: { id: string } }) {
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, timeline: e.target.value }))
             }
-            required
           />
         </div>
 
@@ -235,7 +251,6 @@ export default function EditIdea({ params }: { params: { id: string } }) {
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, category: e.target.value }))
             }
-            required
           />
         </div>
 
@@ -248,7 +263,6 @@ export default function EditIdea({ params }: { params: { id: string } }) {
                 onChange={(e) =>
                   handleArrayInput(index, e.target.value, "challenges")
                 }
-                required
               />
               <Button
                 type="button"
