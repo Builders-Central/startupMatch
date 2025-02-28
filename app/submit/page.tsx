@@ -155,19 +155,22 @@ export default function SubmitIdea() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium mb-1">Title</label>
+            <label className="block text-sm font-medium mb-1">
+              Title <span className="text-destructive">*</span>
+            </label>
             <Input
               value={formData.title}
               onChange={(e) =>
                 setFormData({ ...formData, title: e.target.value })
               }
               required
+              placeholder="Enter your idea title"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1">
-              Description
+              Description <span className="text-destructive">*</span>
             </label>
             <Textarea
               value={formData.description}
@@ -176,13 +179,15 @@ export default function SubmitIdea() {
               }
               required
               rows={4}
+              placeholder="Describe your idea in detail"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">
-                Market Size
+                Market Size{" "}
+                <span className="text-muted-foreground">(Optional)</span>
               </label>
               <Input
                 value={formData.marketSize}
@@ -194,7 +199,8 @@ export default function SubmitIdea() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">
-                Market Potential
+                Market Potential{" "}
+                <span className="text-muted-foreground">(Optional)</span>
               </label>
               <Input
                 value={formData.marketPotential}
@@ -211,7 +217,8 @@ export default function SubmitIdea() {
 
           <div>
             <label className="block text-sm font-medium mb-1">
-              Technical Requirements
+              Technical Requirements{" "}
+              <span className="text-muted-foreground">(Optional)</span>
             </label>
             {formData.technicalRequirements.map((req, index) => (
               <div key={index} className="flex gap-2 mb-2">
@@ -245,7 +252,8 @@ export default function SubmitIdea() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">
-                Financial Requirement
+                Financial Requirement{" "}
+                <span className="text-muted-foreground">(Optional)</span>
               </label>
               <Input
                 value={formData.financialRequirement}
@@ -259,7 +267,10 @@ export default function SubmitIdea() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Timeline</label>
+              <label className="block text-sm font-medium mb-1">
+                Timeline{" "}
+                <span className="text-muted-foreground">(Optional)</span>
+              </label>
               <Input
                 value={formData.timeline}
                 onChange={(e) =>
@@ -271,7 +282,9 @@ export default function SubmitIdea() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Category</label>
+            <label className="block text-sm font-medium mb-1">
+              Category <span className="text-muted-foreground">(Optional)</span>
+            </label>
             <Input
               value={formData.category}
               onChange={(e) =>
@@ -283,7 +296,8 @@ export default function SubmitIdea() {
 
           <div>
             <label className="block text-sm font-medium mb-1">
-              Key Challenges
+              Key Challenges{" "}
+              <span className="text-muted-foreground">(Optional)</span>
             </label>
             {formData.challenges.map((challenge, index) => (
               <div key={index} className="flex gap-2 mb-2">

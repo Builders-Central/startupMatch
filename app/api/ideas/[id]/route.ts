@@ -133,10 +133,7 @@ export async function DELETE(
             .single();
 
         if (fetchError) {
-            return NextResponse.json(
-                { error: 'Idea not found' },
-                { status: 404 }
-            );
+            return NextResponse.json({ error: 'Idea not found' }, { status: 404 });
         }
 
         if (ideaData.author_email !== session.user.email) {
@@ -146,6 +143,26 @@ export async function DELETE(
             );
         }
 
+        // Delete related records first
+        // 1. Delete viewed_ideas records
+        await supabase
+            .from('viewed_ideas')
+            .delete()
+            .eq('idea_id', ideaId);
+
+        // 2. Delete likes records
+        await supabase
+            .from('likes')
+            .delete()
+            .eq('idea_id', ideaId);
+
+        // 3. Delete comments
+        await supabase
+            .from('comments')
+            .delete()
+            .eq('idea_id', ideaId);
+
+        // Finally, delete the idea itself
         const { error } = await supabase
             .from('startup_ideas')
             .delete()

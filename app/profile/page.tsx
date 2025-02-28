@@ -92,9 +92,15 @@ export default function Profile() {
   }, [router, session, status]);
 
   const handleDelete = async (ideaId: string) => {
-    if (!confirm("Are you sure you want to delete this idea?")) return;
+    if (
+      !confirm(
+        "Are you sure you want to delete this idea? This will also delete all related comments and interactions."
+      )
+    )
+      return;
 
     try {
+      setIsLoading(true);
       const response = await fetch(`/api/ideas/${ideaId}`, {
         method: "DELETE",
       });
@@ -106,7 +112,10 @@ export default function Profile() {
 
       setIdeas(ideas.filter((idea) => idea.id !== ideaId));
     } catch (error: any) {
+      console.error("Delete error:", error);
       setError(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
