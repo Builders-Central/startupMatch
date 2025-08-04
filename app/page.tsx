@@ -1,14 +1,19 @@
+// "use client";
+
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight, Lightbulb, Users, Target } from "lucide-react";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import Pilot from "./pilot";
 
 export default async function Home() {
   const session = await getServerSession(authOptions);
 
   return (
     <div className="min-h-screen flex flex-col items-center">
+      {/* ChatPilotBot Integration */}
+      {/* <Pilot /> */}
       {/* Hero Section */}
       <section className="py-12 md:py-20">
         <div className="container px-4 md:px-6">

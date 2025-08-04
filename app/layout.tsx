@@ -5,6 +5,7 @@ import { NextAuthProvider } from "@/providers/NextAuthProvider";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import Navbar from "@/components/Navbar";
 // import Footer from "@/components/Footer";
+import Pilot from "./pilot";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,6 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
+        <Pilot />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
