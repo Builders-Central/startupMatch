@@ -1,73 +1,79 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Copy, Twitter, Linkedin, Facebook } from "lucide-react"
-import { supabase } from "@/utils/supabase"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Copy, Twitter, Linkedin, Facebook } from "lucide-react";
+import { supabase } from "@/utils/supabase";
 
 interface ShareIdeaProps {
   idea: {
-    id: string
-    title: string
-  }
-  isOpen: boolean
-  onClose: () => void
+    id: string;
+    title: string;
+  };
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export default function ShareIdea({ idea, isOpen, onClose }: ShareIdeaProps) {
-  const [copied, setCopied] = useState(false)
-  const [shareUrl, setShareUrl] = useState("")
-  
+  const [copied, setCopied] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
+
   useEffect(() => {
     // Set the share URL only on the client side
-    setShareUrl(`${window.location.origin}/idea/${idea.id}`)
-  }, [idea.id])
-  
+    setShareUrl(`${window.location.origin}/idea/${idea.id}`);
+  }, [idea.id]);
+
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(shareUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    await navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
 
     // Update share count
     try {
-      await supabase.rpc('increment_shares', { idea_id: idea.id })
+      await supabase.rpc("increment_shares", { idea_id: idea.id });
     } catch (error) {
-      console.error('Failed to update share count:', error)
+      console.error("Failed to update share count:", error);
     }
-  }
+  };
 
   const handleSocialShare = (platform: string) => {
-    let url = ''
-    const text = `Check out this startup idea: ${idea.title}`
-    
+    let url = "";
+    const text = `Check out this startup idea: ${idea.title}`;
+
     switch (platform) {
-      case 'twitter':
-        url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`
-        break
-      case 'linkedin':
-        url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`
-        break
-      case 'facebook':
-        url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`
-        break
+      case "twitter":
+        url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+          text
+        )}&url=${encodeURIComponent(shareUrl)}`;
+        break;
+      case "linkedin":
+        url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+          shareUrl
+        )}`;
+        break;
+      case "facebook":
+        url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+          shareUrl
+        )}`;
+        break;
     }
-    
-    window.open(url, '_blank')
-    
+
+    window.open(url, "_blank");
+
     // Update share count
     try {
-      supabase.rpc('increment_shares', { idea_id: idea.id })
+      supabase.rpc("increment_shares", { idea_id: idea.id });
     } catch (error) {
-      console.error('Failed to update share count:', error)
+      console.error("Failed to update share count:", error);
     }
-  }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -75,7 +81,7 @@ export default function ShareIdea({ idea, isOpen, onClose }: ShareIdeaProps) {
         <DialogHeader>
           <DialogTitle>Share this idea</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div className="flex gap-2">
             <Input value={shareUrl} readOnly />
@@ -89,21 +95,21 @@ export default function ShareIdea({ idea, isOpen, onClose }: ShareIdeaProps) {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => handleSocialShare('twitter')}
+              onClick={() => handleSocialShare("twitter")}
             >
               <Twitter className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"
               size="icon"
-              onClick={() => handleSocialShare('linkedin')}
+              onClick={() => handleSocialShare("linkedin")}
             >
-            <Linkedin className="h-4 w-4" />
+              <Linkedin className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"
               size="icon"
-              onClick={() => handleSocialShare('facebook')}
+              onClick={() => handleSocialShare("facebook")}
             >
               <Facebook className="h-4 w-4" />
             </Button>
@@ -111,5 +117,5 @@ export default function ShareIdea({ idea, isOpen, onClose }: ShareIdeaProps) {
         </div>
       </DialogContent>
     </Dialog>
-  )
-} 
+  );
+}
